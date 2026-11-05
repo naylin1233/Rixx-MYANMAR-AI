@@ -1,0 +1,31 @@
+name: Build MYANMAR AI APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Create Flutter Android project
+        run: |
+          flutter create --platforms=android --project-name myanmar_ai .
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MYANMAR-AI-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
