@@ -16,8 +16,11 @@ jobs:
           channel: stable
 
       - name: Create Flutter Android project
+        run: flutter create --platforms=android --project-name myanmar_ai .
+
+      - name: Set Android compile SDK 36
         run: |
-          flutter create --platforms=android --project-name myanmar_ai .
+          sed -i -E 's/^[[:space:]]*compileSdk[[:space:]]*=.*/    compileSdk = 36/' android/app/build.gradle.kts
 
       - name: Install dependencies
         run: flutter pub get
