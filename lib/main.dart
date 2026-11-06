@@ -123,8 +123,10 @@ class _ToolPageState extends State<ToolPage> {
         setState(() => result = (data['error'] ?? 'Server error (${response.statusCode})').toString());
       }
     } catch (e) {
-      setState(() => result = 'ချိတ်ဆက်မှု မအောင်မြင်ပါ။ အင်တာနက်နှင့် Worker URL ကို စစ်ဆေးပါ။');
-    } finally {
+  if (mounted) {
+    setState(() => result = 'အသေးစိတ် Error: $e');
+  }
+} finally {
       if (mounted) setState(() => busy = false);
     }
   }
