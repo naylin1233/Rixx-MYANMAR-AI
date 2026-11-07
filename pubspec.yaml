@@ -1,3 +1,4 @@
+
 name: myanmar_ai
 description: MYANMAR AI - Flutter starter project
 publish_to: 'none'
@@ -16,8 +17,14 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
   assets:
     - assets/myanmar_ai_logo.png
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/myanmar_ai_logo.png"
