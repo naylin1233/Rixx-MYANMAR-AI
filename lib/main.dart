@@ -115,30 +115,35 @@ class _ToolPageState extends State<ToolPage> {
   String result = '';
   bool busy = false;
   PlatformFile? selectedVideo;
-
+int? selectedVideoSize;
   @override
   void dispose() {
     controller.dispose();
     super.dispose();
   }
 
-  Future<void> pickVideo() async {
-    try {
-      final picked = await FilePicker.platform.pickFiles(
-        type: FileType.video,
-        allowMultiple: false,
-      );
+  
+Future<void> pickVideo() async {
+  try {
+    final files = await FilePicker.pickFiles(
+      type: FileType.video,
+    );
 
-      if (picked != null && picked.files.isNotEmpty) {
-        setState(() {
-          selectedVideo = picked.files.first;
-          result = '';
-        });
-      }
-    } catch (e) {
-      setState(() => result = 'Video ရွေးမရပါ: $e');
+    if (files.isNotEmpty) {
+      final file = files.first;
+      final size = await file.length();
+
+      setState(() {
+        selectedVideo = file;
+        selectedVideoSize = size;
+        result = '';
+      });
     }
+  } catch (e) {
+    setState(() => result = 'Video ရွေးမရပါ: $e');
   }
+}
+
 
   Future<void> runAI() async {
     final input = controller.text.trim();
@@ -244,14 +249,15 @@ class _ToolPageState extends State<ToolPage> {
                   Expanded(
                     child: Text(
                       '${selectedVideo!.name}\n'
-                      '${(selectedVideo!.size / 1024 / 1024).toStringAsFixed(2)} MB',
+                      '${((selectedVideoSize ?? 0) / 1024 / 1024).toStringAsFixed(2)} MB',
                     ),
                   ),
                   IconButton(
                     onPressed: () {
                       setState(() {
-                        selectedVideo = null;
-                      });
+  selectedVideo = null;
+  selectedVideoSize = null;
+});
                     },
                     icon: const Icon(Icons.close),
                   ),
