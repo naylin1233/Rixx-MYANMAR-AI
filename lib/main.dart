@@ -41,6 +41,36 @@ class MyanmarAIApp extends StatelessWidget {
   }
 }
 
+class BrandLogo extends StatelessWidget {
+  final double size;
+  const BrandLogo({super.key, this.size = 42});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Image.asset(
+        'assets/myanmar_ai_logo.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: card,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(
+            Icons.auto_awesome,
+            color: purple,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -89,8 +119,8 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Row(
           children: [
-            Icon(Icons.auto_awesome, color: purple),
-            SizedBox(width: 9),
+            BrandLogo(size: 40),
+            SizedBox(width: 10),
             Text(
               'MYANMAR AI',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -104,17 +134,12 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: IndexedStack(
-        index: index,
-        children: pages,
-      ),
+      body: IndexedStack(index: index, children: pages),
       bottomNavigationBar: NavigationBar(
         backgroundColor: const Color(0xFF15101F),
         indicatorColor: purple.withOpacity(0.2),
         selectedIndex: index,
-        onDestinationSelected: (v) {
-          setState(() => index = v);
-        },
+        onDestinationSelected: (v) => setState(() => index = v),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
@@ -177,11 +202,7 @@ class DashboardPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.auto_awesome,
-                size: 38,
-                color: Colors.white,
-              ),
+              const BrandLogo(size: 76),
               const SizedBox(height: 16),
               const Text(
                 'MYANMAR AI STUDIO',
@@ -210,10 +231,7 @@ class DashboardPage extends StatelessWidget {
         const SizedBox(height: 26),
         const Text(
           'AI FEATURES',
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 14),
         GridView.count(
@@ -309,9 +327,7 @@ class FeatureCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: card,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: purple.withOpacity(0.18),
-          ),
+          border: Border.all(color: purple.withOpacity(0.18)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,10 +345,7 @@ class FeatureCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 11,
-              ),
+              style: const TextStyle(color: Colors.white54, fontSize: 11),
             ),
           ],
         ),
@@ -359,7 +372,6 @@ class ToolPage extends StatefulWidget {
 
 class _ToolPageState extends State<ToolPage> {
   final controller = TextEditingController();
-
   String result = '';
   bool busy = false;
   PlatformFile? selectedVideo;
@@ -369,6 +381,255 @@ class _ToolPageState extends State<ToolPage> {
   void dispose() {
     controller.dispose();
     super.dispose();
+  }
+
+  Future<void> pickVideo() async {
+    try {
+      final files = await FilePicker.pickFiles(type: FileType.video);
+      if (files.isNotEmpty) {
+        final file = files.first;
+        final size = await file.length();
+        setState(() {
+          selectedVideo = file;
+          selectedVideoSize = size;
+          result = '';
+        });
+      }
+    } catch (e) {
+      setState(() => result = 'Video ရွေးမရပါ: $e');
+    }
+  }
+
+  Future<void> runAI() async {
+    final input = controller.text.trim();
+
+    if (selectedVideo != null) {
+      setState(() {
+        result = 'Video ရွေးချယ်ပြီးပါပြီ။ အမှန်တကယ် AI Recap လုပ်ရန် Video Upload Backend လိုအပ်ပါသေးသည်။';
+      });
+      return;
+    }
+
+    if (input.isEmpty || busy) return;
+
+    setState(() {
+      busy = true;
+      result = '';
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse(workerUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'action': widget.action,
+          'input': input,
+        }),
+      ).timeout(const Duration(seconds: 90));
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200) {
+        setState(() {
+          result = (data['text'] ?? data['reply'] ?? 'အဖြေမရရှိပါ။').toString();
+        });
+      } else {
+        setState(() {
+          result = (data['error'] ?? 'Server Error (${response.statusCode})').toString();
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => result = 'Error: $e');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isRecap = widget.action == 'recap';
+
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        Text(
+          widget.title,
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        Text(widget.hint, style: const TextStyle(color: Colors.white60)),
+        if (isRecap) ...[
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: busy ? null : pickVideo,
+            icon: const Icon(Icons.video_library),
+            label: const Text('ဖုန်းထဲက Video ရွေးမယ်'),
+          ),
+          if (selectedVideo != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: card,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.video_file, color: purple),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '${selectedVideo!.name}\n${((selectedVideoSize ?? 0) / 1024 / 1024).toStringAsFixed(2)} MB',
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        selectedVideo = null;
+                        selectedVideoSize = null;
+                      });
+                    },
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+        const SizedBox(height: 20),
+        TextField(
+          controller: controller,
+          minLines: 5,
+          maxLines: 12,
+          decoration: InputDecoration(
+            hintText: 'ဒီနေရာမှာ စာရေးပါ...',
+            filled: true,
+            fillColor: card,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: busy ? null : runAI,
+          icon: busy
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.auto_awesome),
+          label: Text(busy ? 'လုပ်ဆောင်နေသည်...' : 'ဖန်တီးမယ်'),
+          style: FilledButton.styleFrom(
+            backgroundColor: purple,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.all(16),
+          ),
+        ),
+        if (result.isNotEmpty) ...[
+          const SizedBox(height: 22),
+          const Text('ရလဒ်', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: card,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: SelectableText(result, style: const TextStyle(height: 1.6)),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class VoicePage extends StatelessWidget {
+  const VoicePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(25),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const BrandLogo(size: 90),
+            const SizedBox(height: 20),
+            const Text(
+              'VOICE STUDIO',
+              style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Narrator နှင့် Character Voice ထုတ်လုပ်နိုင်မည့်နေရာပါ။',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white60),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              'Voice Generation Backend ကို နောက်တစ်ဆင့်မှာ ချိတ်ဆက်ရပါမယ်။',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: purple),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MorePage extends StatelessWidget {
+  final Function(String, String, String) onTool;
+
+  const MorePage({super.key, required this.onTool});
+
+  @override
+  Widget build(BuildContext context) {
+    final tools = [
+      ['SRT Subtitle', 'srt', 'Subtitle စာသား သို့မဟုတ် Transcript ထည့်ပါ။', Icons.subtitles],
+      ['Thumbnail', 'thumbnail', 'Thumbnail အတွက် စာသားရေးပါ။', Icons.image],
+      ['Title + Hashtag', 'title', 'ဗီဒီယိုအကြောင်းအရာကို ရေးပါ။', Icons.title],
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        const Text(
+          'MORE TOOLS',
+          style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 18),
+        for (final tool in tools)
+          Card(
+            color: card,
+            child: ListTile(
+              leading: Icon(tool[3] as IconData, color: purple),
+              title: Text(tool[0] as String),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => onTool(
+                tool[0] as String,
+                tool[1] as String,
+                tool[2] as String,
+              ),
+            ),
+          ),
+        const SizedBox(height: 25),
+        const Center(
+          child: Text(
+            'MYANMAR AI PREMIUM\nVersion 2.0',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white38),
+          ),
+        ),
+      ],
+    );
+  }
+}
+er.dispose();
   }
 
   Future<void> pickVideo() async {
