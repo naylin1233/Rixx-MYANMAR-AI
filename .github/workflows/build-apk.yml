@@ -1,22 +1,32 @@
-withter-apk Build MYANMAR AI APK
+
+name: Build MYANMAR AI APK
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      - name: Create Flutter Android project
+      - name: Create Android project
         run: flutter create --platforms=android --project-name myanmar_ai .
+
+      - name: Set Android compile SDK
+        run: |
+          sed -i -E 's/^[[:space:]]*compileSdk[[:space:]]*=.*/    compileSdk = 36/' android/app/build.gradle.kts
+
       - name: Add Internet Permission
         run: |
           python3 - <<'PY'
@@ -35,18 +45,18 @@ jobs:
               )
               p.write_text(s)
           PY
-      - name: Set Android compile SDK 36
-        run: |
-          sed -i -E 's/^[[:space:]]*compileSdk[[:space:]]*=.*/    compileSdk = 36/' android/app/build.gradle.kts
 
       - name: Install dependencies
         run: flutter pub get
+
       - name: Generate App Icon
         run: dart run flutter_launcher_icons
+
       - name: Build APK
         run: flutter build apk --release --dart-define=WORKER_URL=${{ secrets.WORKER_URL }}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: MYANMAR-AI-APK
           path: build/app/outputs/flutter-apk/app-release.apk
