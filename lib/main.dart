@@ -6,8 +6,12 @@ import 'package:file_picker/file_picker.dart';
 
 const String workerUrl = String.fromEnvironment(
   'WORKER_URL',
-  defaultValue: 'https://YOUR-WORKER-NAME.YOUR-SUBDOMAIN.workers.dev',
+  defaultValue: 'https://myanmar-ai-api.nay577770.workers.dev',
 );
+
+const purple = Color(0xFFAD79FF);
+const bg = Color(0xFF0B0813);
+const card = Color(0xFF191326);
 
 void main() => runApp(const MyanmarAIApp());
 
@@ -16,18 +20,21 @@ class MyanmarAIApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF16A36A);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'MYANMAR AI',
       theme: ThemeData(
         brightness: Brightness.dark,
+        scaffoldBackgroundColor: bg,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: green,
+          seedColor: purple,
           brightness: Brightness.dark,
         ),
-        scaffoldBackgroundColor: const Color(0xFF081510),
         useMaterial3: true,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: bg,
+          foregroundColor: Colors.white,
+        ),
       ),
       home: const HomePage(),
     );
@@ -44,50 +51,291 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int index = 0;
 
-  final pages = const [
-    ToolPage(title: 'AI Chat', action: 'chat',
-        hint: 'မြန်မာလို မေးခွန်းရေးပါ။'),
-    ToolPage(title: 'ဘာသာပြန်', action: 'translate',
-        hint: 'ဘာသာပြန်လိုသော စာသားနှင့် ဘယ်ဘာသာသို့ ပြန်လိုသည်ကို ရေးပါ။'),
-    ToolPage(title: 'Video Recap', action: 'recap',
-        hint: 'ဖုန်းထဲက Video ရွေးပါ၊ သို့မဟုတ် Video Link ထည့်ပါ။'),
-    ToolPage(title: 'Title + Hashtag', action: 'title',
-        hint: 'ဗီဒီယိုအကြောင်းအရာကို ရေးပါ။'),
-    ToolPage(title: 'Thumbnail စာသား', action: 'thumbnail',
-        hint: 'Thumbnail အတွက် မြန်မာ + English စာသား ရယူပါ။'),
-    ToolPage(title: 'SRT အကူအညီ', action: 'srt',
-        hint: 'Subtitle စာသား သို့မဟုတ် transcript ကို ထည့်ပါ။'),
-  ];
+  void openTool(String title, String action, String hint) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ToolPage(
+          title: title,
+          action: action,
+          hint: hint,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      DashboardPage(
+        onOpen: (i) => setState(() => index = i),
+        onTool: openTool,
+      ),
+      ToolPage(
+        title: 'Video Recap',
+        action: 'recap',
+        hint: 'ဇာတ်လမ်းအကြောင်းအရာ သို့မဟုတ် ခွင့်ပြုထားသော Video Link ထည့်ပါ။',
+      ),
+      ToolPage(
+        title: 'ဘာသာပြန်',
+        action: 'translate',
+        hint: 'မြန်မာ၊ English၊ Thai၊ Chinese၊ Japanese၊ Korean ဘာသာများအတွက် စာသားထည့်ပါ။',
+      ),
+      const VoicePage(),
+      MorePage(onTool: openTool),
+    ];
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'MYANMAR AI',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome, color: purple),
+            SizedBox(width: 9),
+            Text(
+              'MYANMAR AI',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
         actions: const [
           Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: Icon(Icons.auto_awesome, color: Color(0xFF38D996)),
+            padding: EdgeInsets.only(right: 18),
+            child: Icon(Icons.workspace_premium, color: purple),
           ),
         ],
       ),
-      body: pages[index],
+      body: IndexedStack(
+        index: index,
+        children: pages,
+      ),
       bottomNavigationBar: NavigationBar(
+        backgroundColor: const Color(0xFF15101F),
+        indicatorColor: purple.withOpacity(0.2),
         selectedIndex: index,
-        onDestinationSelected: (v) => setState(() => index = v),
+        onDestinationSelected: (v) {
+          setState(() => index = v);
+        },
         destinations: const [
           NavigationDestination(
-              icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home, color: purple),
+            label: 'Home',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.translate), label: 'Tools'),
+            icon: Icon(Icons.movie_outlined),
+            selectedIcon: Icon(Icons.movie, color: purple),
+            label: 'Recap',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.movie_outlined), label: 'Recap'),
+            icon: Icon(Icons.translate),
+            selectedIcon: Icon(Icons.translate, color: purple),
+            label: 'Translate',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.subtitles_outlined), label: 'SRT'),
+            icon: Icon(Icons.graphic_eq),
+            selectedIcon: Icon(Icons.graphic_eq, color: purple),
+            label: 'Voice',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.grid_view),
+            selectedIcon: Icon(Icons.grid_view, color: purple),
+            label: 'More',
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class DashboardPage extends StatelessWidget {
+  final Function(int) onOpen;
+  final Function(String, String, String) onTool;
+
+  const DashboardPage({
+    super.key,
+    required this.onOpen,
+    required this.onTool,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF552B91),
+                Color(0xFF24143F),
+                Color(0xFF171024),
+              ],
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.auto_awesome,
+                size: 38,
+                color: Colors.white,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'MYANMAR AI STUDIO',
+                style: TextStyle(
+                  fontSize: 23,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 7),
+              const Text(
+                'သင့်ရဲ့ AI Video Creation Studio',
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 18),
+              FilledButton(
+                onPressed: () => onOpen(1),
+                style: FilledButton.styleFrom(
+                  backgroundColor: purple,
+                  foregroundColor: Colors.black,
+                ),
+                child: const Text('စတင်အသုံးပြုမယ်'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 26),
+        const Text(
+          'AI FEATURES',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 14),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.2,
+          children: [
+            FeatureCard(
+              icon: Icons.movie_creation_outlined,
+              title: 'Video Recap',
+              subtitle: 'ဇာတ်လမ်းအကျဉ်းချုပ်',
+              onTap: () => onOpen(1),
+            ),
+            FeatureCard(
+              icon: Icons.translate,
+              title: 'ဘာသာပြန်',
+              subtitle: 'Multi Language',
+              onTap: () => onOpen(2),
+            ),
+            FeatureCard(
+              icon: Icons.graphic_eq,
+              title: 'Voice Studio',
+              subtitle: 'အသံထုတ်လုပ်မှု',
+              onTap: () => onOpen(3),
+            ),
+            FeatureCard(
+              icon: Icons.subtitles_outlined,
+              title: 'SRT Subtitle',
+              subtitle: 'စာတန်းထိုး',
+              onTap: () => onTool(
+                'SRT Subtitle',
+                'srt',
+                'Subtitle စာသား သို့မဟုတ် Transcript ထည့်ပါ။',
+              ),
+            ),
+            FeatureCard(
+              icon: Icons.image_outlined,
+              title: 'Thumbnail',
+              subtitle: 'Thumbnail စာသား',
+              onTap: () => onTool(
+                'Thumbnail',
+                'thumbnail',
+                'Thumbnail အတွက် စာသားရေးပါ။',
+              ),
+            ),
+            FeatureCard(
+              icon: Icons.title,
+              title: 'Title & Hashtag',
+              subtitle: 'Video အတွက် စာသား',
+              onTap: () => onTool(
+                'Title + Hashtag',
+                'title',
+                'ဗီဒီယိုအကြောင်းအရာကို ရေးပါ။',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 22),
+        const Text(
+          'MYANMAR AI • PREMIUM EDITION',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.white38, fontSize: 11),
+        ),
+      ],
+    );
+  }
+}
+
+class FeatureCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const FeatureCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: purple.withOpacity(0.18),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: purple, size: 30),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -115,35 +363,34 @@ class _ToolPageState extends State<ToolPage> {
   String result = '';
   bool busy = false;
   PlatformFile? selectedVideo;
-int? selectedVideoSize;
+  int? selectedVideoSize;
+
   @override
   void dispose() {
     controller.dispose();
     super.dispose();
   }
 
-  
-Future<void> pickVideo() async {
-  try {
-    final files = await FilePicker.pickFiles(
-      type: FileType.video,
-    );
+  Future<void> pickVideo() async {
+    try {
+      final files = await FilePicker.pickFiles(
+        type: FileType.video,
+      );
 
-    if (files.isNotEmpty) {
-      final file = files.first;
-      final size = await file.length();
+      if (files.isNotEmpty) {
+        final file = files.first;
+        final size = await file.length();
 
-      setState(() {
-        selectedVideo = file;
-        selectedVideoSize = size;
-        result = '';
-      });
+        setState(() {
+          selectedVideo = file;
+          selectedVideoSize = size;
+          result = '';
+        });
+      }
+    } catch (e) {
+      setState(() => result = 'Video ရွေးမရပါ: $e');
     }
-  } catch (e) {
-    setState(() => result = 'Video ရွေးမရပါ: $e');
   }
-}
-
 
   Future<void> runAI() async {
     final input = controller.text.trim();
@@ -151,21 +398,13 @@ Future<void> pickVideo() async {
     if (selectedVideo != null) {
       setState(() {
         result =
-            'Video ဖိုင်ကို ရွေးချယ်ပြီးပါပြီ။ '
-            'Video ကို AI နဲ့ အမှန်တကယ် စစ်ဆေးနိုင်ဖို့ '
-            'Media Upload စနစ်ကို နောက်တစ်ဆင့်မှာ ချိတ်ဆက်ရပါမယ်။';
+            'Video ရွေးချယ်ပြီးပါပြီ။ '
+            'အမှန်တကယ် AI Recap လုပ်ရန် Video Upload Backend လိုအပ်ပါသေးသည်။';
       });
       return;
     }
 
     if (input.isEmpty || busy) return;
-
-    if (workerUrl.contains('YOUR-WORKER-NAME')) {
-      setState(() {
-        result = 'Worker URL မသတ်မှတ်ရသေးပါ။';
-      });
-      return;
-    }
 
     setState(() {
       busy = true;
@@ -194,12 +433,12 @@ Future<void> pickVideo() async {
       } else {
         setState(() {
           result = (data['error'] ??
-              'Server error (${response.statusCode})').toString();
+              'Server Error (${response.statusCode})').toString();
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => result = 'အသေးစိတ် Error: $e');
+        setState(() => result = 'Error: $e');
       }
     } finally {
       if (mounted) {
@@ -217,16 +456,16 @@ Future<void> pickVideo() async {
       children: [
         Text(
           widget.title,
-          style: Theme.of(context)
-              .textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 10),
         Text(
           widget.hint,
-          style: const TextStyle(color: Colors.white70),
+          style: const TextStyle(color: Colors.white60),
         ),
-
         if (isRecap) ...[
           const SizedBox(height: 20),
           OutlinedButton.icon(
@@ -237,14 +476,14 @@ Future<void> pickVideo() async {
           if (selectedVideo != null) ...[
             const SizedBox(height: 10),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFF10251B),
-                borderRadius: BorderRadius.circular(12),
+                color: card,
+                borderRadius: BorderRadius.circular(15),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.video_file, color: Color(0xFF38D996)),
+                  const Icon(Icons.video_file, color: purple),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -255,9 +494,9 @@ Future<void> pickVideo() async {
                   IconButton(
                     onPressed: () {
                       setState(() {
-  selectedVideo = null;
-  selectedVideoSize = null;
-});
+                        selectedVideo = null;
+                        selectedVideoSize = null;
+                      });
                     },
                     icon: const Icon(Icons.close),
                   ),
@@ -265,32 +504,23 @@ Future<void> pickVideo() async {
               ),
             ),
           ],
-          const SizedBox(height: 18),
-          const Text(
-            'သို့မဟုတ် Video Link ထည့်ပါ',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
         ],
-
+        const SizedBox(height: 20),
         TextField(
           controller: controller,
           minLines: 5,
           maxLines: 12,
           decoration: InputDecoration(
-            hintText: isRecap
-                ? 'YouTube / TikTok / Facebook / Instagram Link သို့မဟုတ် စာသားထည့်ပါ...'
-                : 'ဒီနေရာမှာ စာရေးပါ...',
+            hintText: 'ဒီနေရာမှာ စာရေးပါ...',
             filled: true,
-            fillColor: const Color(0xFF10251B),
+            fillColor: card,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
+              borderSide: BorderSide.none,
             ),
           ),
         ),
-
-        const SizedBox(height: 14),
-
+        const SizedBox(height: 16),
         FilledButton.icon(
           onPressed: busy ? null : runAI,
           icon: busy
@@ -301,28 +531,129 @@ Future<void> pickVideo() async {
                 )
               : const Icon(Icons.auto_awesome),
           label: Text(busy ? 'လုပ်ဆောင်နေသည်...' : 'ဖန်တီးမယ်'),
+          style: FilledButton.styleFrom(
+            backgroundColor: purple,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.all(16),
+          ),
         ),
-
         if (result.isNotEmpty) ...[
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
           const Text(
             'ရလဒ်',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
-          SelectableText(
-            result,
-            style: const TextStyle(height: 1.5),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: card,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: SelectableText(
+              result,
+              style: const TextStyle(height: 1.6),
+            ),
           ),
         ],
+      ],
+    );
+  }
+}
 
-        const SizedBox(height: 24),
+class VoicePage extends StatelessWidget {
+  const VoicePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(25),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.graphic_eq,
+              color: purple,
+              size: 70,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'VOICE STUDIO',
+              style: TextStyle(
+                fontSize: 23,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Narrator နှင့် Character Voice '
+              'ထုတ်လုပ်နိုင်မည့်နေရာပါ။',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white60),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              'Voice Generation Backend ကို '
+              'နောက်တစ်ဆင့်မှာ ချိတ်ဆက်ရပါမယ်။',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: purple),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MorePage extends StatelessWidget {
+  final Function(String, String, String) onTool;
+
+  const MorePage({
+    super.key,
+    required this.onTool,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tools = [
+      ['SRT Subtitle', 'srt', 'Subtitle စာသား သို့မဟုတ် Transcript ထည့်ပါ။', Icons.subtitles],
+      ['Thumbnail', 'thumbnail', 'Thumbnail အတွက် စာသားရေးပါ။', Icons.image],
+      ['Title + Hashtag', 'title', 'ဗီဒီယိုအကြောင်းအရာကို ရေးပါ။', Icons.title],
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
         const Text(
-          'မှတ်ချက် — ယခုအဆင့်တွင် Video ရွေးချယ်နိုင်ပြီး Link ထည့်နိုင်ပါပြီ။ '
-          'Video Upload၊ Link မှ Video အကြောင်းအရာဖတ်ခြင်း၊ '
-          'အသံထုတ်ယူခြင်းနှင့် အချိန်ညှိ SRT တို့ကို '
-          'နောက်ထပ် Backend စနစ်ဖြင့် ချိတ်ဆက်ရပါမည်။',
-          style: TextStyle(color: Colors.white54, fontSize: 12),
+          'MORE TOOLS',
+          style: TextStyle(
+            fontSize: 23,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 18),
+        for (final tool in tools)
+          Card(
+            color: card,
+            child: ListTile(
+              leading: Icon(tool[3] as IconData, color: purple),
+              title: Text(tool[0] as String),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => onTool(
+                tool[0] as String,
+                tool[1] as String,
+                tool[2] as String,
+              ),
+            ),
+          ),
+        const SizedBox(height: 25),
+        const Center(
+          child: Text(
+            'MYANMAR AI PREMIUM\nVersion 2.0',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white38),
+          ),
         ),
       ],
     );
